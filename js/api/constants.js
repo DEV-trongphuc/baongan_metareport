@@ -41,36 +41,38 @@ const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 // =================== GOAL MAPPINGS ===================
 const goalMapping = {
   "Lead Form": ["LEAD_GENERATION", "QUALITY_LEAD"],
-  Awareness:   ["REACH", "AD_RECALL_LIFT", "IMPRESSIONS"],
-  Engagement:  ["POST_ENGAGEMENT", "THRUPLAY", "EVENT_RESPONSES"],
-  Message:     ["REPLIES"],
-  Traffic:     ["OFFSITE_CONVERSIONS", "LINK_CLICKS", "PROFILE_VISIT", "LANDING_PAGE_VIEWS"],
-  Pagelike:    ["PAGE_LIKES"],
+  Awareness: ["REACH", "AD_RECALL_LIFT", "IMPRESSIONS"],
+  Engagement: ["POST_ENGAGEMENT", "THRUPLAY", "EVENT_RESPONSES"],
+  Message: ["REPLIES"],
+  Traffic: ["OFFSITE_CONVERSIONS", "LINK_CLICKS", "PROFILE_VISIT", "LANDING_PAGE_VIEWS"],
+  Pagelike: ["PAGE_LIKES"],
+  OFFSITE_CONVERSIONS: ["OFFSITE_CONVERSIONS"],
 };
 
 const resultMapping = {
-  REACH:           "reach",
+  OFFSITE_CONVERSIONS: "offsite_conversion.fb_pixel_custom", // Or purchase fallback
+  REACH: "reach",
   LEAD_GENERATION: "onsite_conversion.lead_grouped",
-  QUALITY_LEAD:    "onsite_conversion.lead_grouped",
-  THRUPLAY:        "video_thruplay_watched_actions",
+  QUALITY_LEAD: "onsite_conversion.lead_grouped",
+  THRUPLAY: "video_thruplay_watched_actions",
   POST_ENGAGEMENT: "post_engagement",
-  PROFILE_VISIT:   "link_click",
-  LINK_CLICKS:     "link_click",
+  PROFILE_VISIT: "link_click",
+  LINK_CLICKS: "link_click",
   LANDING_PAGE_VIEWS: "link_click",
-  REPLIES:         "onsite_conversion.messaging_conversation_started_7d",
-  IMPRESSIONS:     "impressions",
-  PAGE_LIKES:      "page_like",
-  DEFAULT:         "reach",
+  REPLIES: "onsite_conversion.messaging_conversation_started_7d",
+  IMPRESSIONS: "impressions",
+  PAGE_LIKES: "page_like",
+  DEFAULT: "reach",
 };
 
 const campaignIconMapping = {
   "Lead Form": "fa-solid fa-bullseye",
-  Awareness:   "fa-solid fa-eye",
-  Engagement:  "fa-solid fa-star",
-  Message:     "fa-solid fa-comments",
-  Traffic:     "fa-solid fa-mouse-pointer",
-  Pagelike:    "fa-solid fa-thumbs-up",
-  DEFAULT:     "fa-solid fa-crosshairs",
+  Awareness: "fa-solid fa-eye",
+  Engagement: "fa-solid fa-star",
+  Message: "fa-solid fa-comments",
+  Traffic: "fa-solid fa-mouse-pointer",
+  Pagelike: "fa-solid fa-thumbs-up",
+  DEFAULT: "fa-solid fa-crosshairs",
 };
 
 // Reverse lookup: { "LEAD_GENERATION": "Lead Form", "REACH": "Awareness", ... }

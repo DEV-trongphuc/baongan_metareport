@@ -36,90 +36,51 @@ function renderRegionChart(data = []) {
   const c2d = ctx.getContext("2d");
 
   if (window.chart_region_total instanceof Chart) {
-    try {
-      window.chart_region_total.destroy();
-    } catch (err) {
-      console.warn("⚠️ Chart destroy error:", err);
-    }
+    try { window.chart_region_total.destroy(); } catch (err) {}
   }
   window.chart_region_total = null;
 
   const regionSpend = {};
   data.forEach((d) => {
-    let region = (d.region || "").trim();
+    const region = (d.region || "").trim();
     if (!region || region.toUpperCase() === "UNKNOWN") return;
-
-    region = region
-      .replace(/\b(province|city|region|state|district|area|zone)\b/gi, "")
-      .replace(/\b(tỉnh|thành phố|tp|quận|huyện)\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim();
 
     const spend = parseFloat(d.spend || 0);
     if (spend <= 0) return;
 
-    const key = region.toLowerCase();
-    regionSpend[key] = (regionSpend[key] || 0) + spend;
+    regionSpend[region] = (regionSpend[region] || 0) + spend;
   });
 
   const totalSpend = Object.values(regionSpend).reduce((a, b) => a + b, 0);
   if (totalSpend === 0) return;
 
-  // ✅ Top 5 cao nhất
   const allEntries = Object.entries(regionSpend).filter(([_, v]) => v > 0);
   allEntries.sort((a, b) => b[1] - a[1]);
   const filtered = allEntries.slice(0, 5);
   if (!filtered.length) return;
 
-  // ✅ Helper rút gọn tên
-  const shortenRegion = (name) => {
-    let s = name
-      .replace(/\b(tỉnh|thành phố|thành phố trực thuộc trung ương|tp\.|tp|province|city|region|state|district|area|zone)\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .normalize("NFC");
-    return s.length > 12 ? s.slice(0, 11) + "…" : s;
-  };
-
-  // ✅ Chuẩn hoá label
-  const regions = filtered.map(([r]) => shortenRegion(r));
-  const fullNames = filtered.map(([r]) =>
-    r.replace(/\b\w/g, (c) => c.toUpperCase()).normalize("NFC").trim()
-  );
-
+  const labels = filtered.map(([r]) => r);
   const values = filtered.map(([_, v]) => Math.round(v));
-
-  const [maxRegion] = filtered.reduce((a, b) => (a[1] > b[1] ? a : b));
+  const maxRegion = filtered[0][0];
 
   const gradientGold = makeGoldGradient(c2d, 300);
   const gradientGray = makeGrayGradient(c2d, 300);
 
-  const bgColors = filtered.map(([r]) =>
-    r === maxRegion ? gradientGold : gradientGray
-  );
-
-  const isFew = regions.length < 3;
-  const barWidth = isFew ? 0.35 : undefined;
-  const catWidth = isFew ? 0.65 : undefined;
+  const bgColors = filtered.map(([r]) => r === maxRegion ? gradientGold : gradientGray);
+  const isFew = labels.length < 3;
 
   window.chart_region_total = new Chart(c2d, {
     type: "bar",
     data: {
-      labels: regions,
-      datasets: [
-        {
-          label: "Spend",
-          data: values,
-          backgroundColor: bgColors,
-          borderRadius: 8,
-          borderWidth: 0,
-          ...(isFew && {
-            barPercentage: barWidth,
-            categoryPercentage: catWidth,
-          }),
-        },
-      ],
+      labels,
+      datasets: [{
+        label: "Spend",
+        data: values,
+        backgroundColor: bgColors,
+        borderRadius: 8,
+        borderWidth: 0,
+        ...(isFew && { barPercentage: 0.35, categoryPercentage: 0.65 }),
+      }],
     },
     options: {
       responsive: true,
@@ -130,7 +91,7 @@ function renderRegionChart(data = []) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: (ctx) => fullNames[ctx[0].dataIndex] || ctx[0].label,
+            title: (ctx) => ctx[0].label,
             label: (ctx) => `Spend: ${formatMoneyShort(ctx.raw)}`,
           },
         },
@@ -145,27 +106,18 @@ function renderRegionChart(data = []) {
       },
       scales: {
         x: {
-          grid: {
-            color: CHART_GRID_COLOR,
-            drawBorder: true,
-            borderColor: CHART_GRID_BORDER,
-          },
+          grid: { color: CHART_GRID_COLOR, drawBorder: true, borderColor: CHART_GRID_BORDER },
           ticks: {
             color: CHART_TICK_LIGHT,
             font: { weight: "600", size: 9 },
-            maxRotation: 0,
+            maxRotation: 30,
             minRotation: 0,
-            autoSkip: false, // ✅ không bỏ label nữa
-            maxTicksLimit: regions.length, // ✅ bắn full
+            autoSkip: false,
           },
         },
         y: {
           beginAtZero: true,
-          grid: {
-            color: CHART_GRID_COLOR,
-            drawBorder: true,
-            borderColor: CHART_GRID_BORDER,
-          },
+          grid: { color: CHART_GRID_COLOR, drawBorder: true, borderColor: CHART_GRID_BORDER },
           ticks: { display: false },
           suggestedMax: Math.max(...values) * 1.2,
         },
@@ -401,7 +353,7 @@ if (statusFilterBox) {
       selectedText.innerHTML = label;
 
       if (view === "reset_status") {
-        selectedText.textContent = "Sắp kết thúc";
+        selectedText.textContent = "Ending Soon";
         renderCampaignView(window._ALL_CAMPAIGNS);
       } else {
         const now = new Date();
@@ -415,12 +367,12 @@ if (statusFilterBox) {
 
           if (!endTimes.length) return false;
 
-          // Đối với "Đã kết thúc", check xem có cái nào đã qua ngày hiện tại chưa
+          // Đối với "Ended", check xem có cái nào đã qua ngày hiện tại chưa
           if (view === "ended_ads") {
             return endTimes.some(d => d < now);
           }
 
-          // Đối với "Sắp kết thúc x ngày"
+          // Đối với "Ending Soon x ngày"
           const days = view === "ending_1d" ? 1 : 3;
           return endTimes.some(d => {
             const diff = d - now;
@@ -496,17 +448,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   if (btnRegion && region) {
-    btnRegion.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        region.classList.toggle("active");
-      });
-    });
+    // handled via onclick="toggleRegionView()" in HTML
   }
 
-  // Global toggle function used by inline onclick on region buttons
+  // Always define globally — HTML uses onclick="toggleRegionView()"
   window.toggleRegionView = function () {
+    console.log('[RegionChart] toggleRegionView called');
     const regionCard = document.getElementById("region_inner_card") || document.querySelector(".dom_region_inner");
-    if (regionCard) regionCard.classList.toggle("active");
+    console.log('[RegionChart] card found:', regionCard);
+    if (!regionCard) return;
+    regionCard.classList.toggle("active");
+
+    const isRegionActive = regionCard.classList.contains("active");
+    console.log('[RegionChart] isActive:', isRegionActive);
+    console.log('[RegionChart] _lastRegionData:', window._lastRegionData?.length,
+      '| spendByRegion:', window._DASHBOARD_BATCH_RESULTS?.spendByRegion?.length);
+
+    if (isRegionActive) {
+      const cachedData = window._lastRegionData ||
+        window._DASHBOARD_BATCH_RESULTS?.spendByRegion;
+      console.log('[RegionChart] cachedData:', cachedData?.length, cachedData?.slice?.(0, 2));
+      if (cachedData?.length) {
+        if (window.chart_region_total instanceof Chart) {
+          try { window.chart_region_total.destroy(); } catch (e) {}
+          window.chart_region_total = null;
+        }
+        renderRegionChart(cachedData);
+        console.log('[RegionChart] rendered. chart instance:', window.chart_region_total);
+      } else {
+        console.warn('[RegionChart] No cached region data. Has loadDashboardData() run?');
+      }
+    }
   };
 
   // Toggle Sidebar on mobile menu click
@@ -592,9 +564,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update global variable and close dropdown
       ACCOUNT_ID = accId;
+
+      // Update currency badge from the option dataset/text
+      const currencyEl = option.querySelector("span:last-child");
+      if (currencyEl) {
+        const match = currencyEl.textContent.match(/Tiền tệ:\s*(\w+)/);
+        if (match) window.ACCOUNT_CURRENCY = match[1];
+      }
+
+      // --- Reset ALL caches so new account gets fresh data ---
+      if (typeof CACHE !== "undefined") CACHE.clear();
+      window._DASHBOARD_BATCH_RESULTS = null;
+      window._extraChartsKey          = null;  
+      window._lastRegionData          = null;
+      window._ALL_CAMPAIGNS           = [];
+      window.processedByRegion        = null;
+
+      // Destroy stale charts so they re-render fresh
+      ['chart_region_total','chart_age_gender_total','platformChartInstance',
+       'extra_goal_chart_instance','device_chart_instance'].forEach(k => {
+        if (window[k] instanceof Chart) {
+          try { window[k].destroy(); window[k] = null; } catch(e) {}
+        }
+      });
+
       parent.classList.remove("active");
 
       // Load dashboard data after account change
+      console.log(`[Dashboard] loadDashboardData called for ACCOUNT_ID: ${ACCOUNT_ID}`);
       loadDashboardData();
     }
 
@@ -723,12 +720,8 @@ async function fetchAdAccountInfo() {
     }
 
     // Cập nhật thông tin vào DOM
-    document.getElementById("detail_balance").innerHTML = `${(
-      balance * 1
-    ).toLocaleString("vi-VN")}đ`;
-    document.getElementById("detail_vat").innerHTML = `${(
-      vat * 1
-    ).toLocaleString("vi-VN")}đ`;
+    document.getElementById("detail_balance").innerHTML = formatMoney(balance * 1);
+    document.getElementById("detail_vat").innerHTML = formatMoney(vat * 1);
     document.getElementById("detail_method").innerHTML = paymentMethodDisplay;
 
     // Cập nhật Business Info

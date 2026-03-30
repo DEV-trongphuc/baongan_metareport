@@ -31,6 +31,16 @@ async function loadAllDashboardCharts(campaignIds = []) {
 
     if (totalSpend === 0) {
       document.querySelector(".dom_container")?.classList.add("is-empty");
+      // Explicitly clear legacy UI parts so old account data isn't retained
+      renderPlatformSpendUI({ facebook: 0, instagram: 0, other: 0 });
+      renderPlatformPosition([]);
+      renderAgeGenderChart([]);
+      try { if (window.chart_region_total) window.chart_region_total.destroy(); } catch(e){}
+      const regionCanvas = document.getElementById("region_chart");
+      if (regionCanvas) {
+         const ctx = regionCanvas.getContext("2d");
+         ctx.clearRect(0, 0, regionCanvas.width, regionCanvas.height);
+      }
       return;
     }
     document.querySelector(".dom_container")?.classList.remove("is-empty");

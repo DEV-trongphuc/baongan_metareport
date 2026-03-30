@@ -189,10 +189,31 @@ function _aggregateExtraStats(campaigns) {
 
 async function loadExtraCharts() {
     const campaigns = window._ALL_CAMPAIGNS || [];
-    if (!campaigns.length) return;
 
-    // Guard: skip full re-render if date range and dataset haven't changed
-    const _cacheKey = `${startDate}_${endDate}_${campaigns.length}`;
+    // If no campaigns in this account for the given date, clear charts to prevent stale data
+    if (!campaigns.length) {
+        window._extraChartsKey = null;
+        ['extra_goal_chart_instance','device_chart_instance'].forEach(k => {
+            if (window[k] instanceof Chart) { try { window[k].destroy(); window[k] = null; } catch(e) {} }
+        });
+        const clr = (id) => { const el = document.getElementById(id); if (el) el.innerHTML = ""; };
+        clr("top_campaigns_list");
+        clr("engagement_mix_list");
+        clr("extra_platform_list");
+        clr("video_funnel_wrap");
+        const chartEl = document.getElementById("device_chart") || document.getElementById("device_chart_canvas");
+        if (chartEl) {
+            const chartContainer = chartEl.closest(".dom_inner");
+            if (chartContainer) {
+                chartContainer.innerHTML = `<h2><i class="fa-solid fa-mobile-screen main_clr"></i> Device Breakdown</h2><div><canvas id="device_chart"></canvas></div>`;
+            }
+        }
+        renderExtraOverview({ totalSpend:0, impressions:0, linkClicks:0, results:0, leads:0, messages:0, follows:0 });
+        return;
+    }
+
+    // Guard: skip full re-render if account, date range and dataset haven't changed
+    const _cacheKey = `${window.ACCOUNT_ID}_${window.startDate}_${window.endDate}_${campaigns.length}`;
     if (window._extraChartsKey === _cacheKey) return;
     window._extraChartsKey = _cacheKey;
 
@@ -242,7 +263,7 @@ function renderExtraOverview(stats) {
     wrap.style.overflowY = "unset";
     wrap.style.paddingRight = "0";
 
-    const fmt  = (v) => Math.round(v).toLocaleString("vi-VN") + "đ";
+    const fmt  = (v) => formatMoney(v);
     const fmtN = (v) => Math.round(v).toLocaleString("vi-VN");
 
     wrap.innerHTML = `
@@ -402,7 +423,7 @@ function renderExtraPlatformPositions(data) {
                 <span style="font-size:1.1rem;font-weight:600;color:${COLORS.platformName};">${_formatPlatformName(publisher, position)}</span>
             </div>
             <div style="flex:1;text-align:center;">
-                <span style="font-weight:600;font-size:1.1rem;color:${COLORS.platformSpend};"><i class="fa-solid fa-money-bill" style="color:${COLORS.platformMoneyIcon};margin-right:5px;font-size:0.9rem;"></i>${spend.toLocaleString("vi-VN")}đ</span>
+                <span style="font-weight:600;font-size:1.1rem;color:${COLORS.platformSpend};"><i class="fa-solid fa-money-bill" style="color:${COLORS.platformMoneyIcon};margin-right:5px;font-size:0.9rem;"></i>${formatMoney(spend)}</span>
             </div>
             <div style="flex:0 0 80px;text-align:right;">
                 <span style="background:${COLORS.platformBadgeBg};color:${COLORS.platformBadgeText};padding:0.4rem 0.8rem;border-radius:20px;font-size:0.95rem;font-weight:700;">${percent.toFixed(1)}%</span>
@@ -498,7 +519,7 @@ function renderTopCampaignsChart(campSpend) {
     sorted.forEach(([name, spend], i) => {
         const pct = total > 0 ? ((spend / total) * 100).toFixed(1) : 0;
         const barW = maxVal > 0 ? ((spend / maxVal) * 100).toFixed(1) : 0;
-        const spendFmt = parseInt(spend).toLocaleString('vi-VN');
+        const spendFmt = formatMoney(spend);
         const isTop = i === 0;
 
         const item = document.createElement('div');
@@ -522,7 +543,7 @@ function renderTopCampaignsChart(campSpend) {
                     <span style="font-size:1.15rem;font-weight:600;color:${COLORS.campNameColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${name}">${name}</span>
                 </div>
                 <div style="flex-shrink:0;text-align:right;">
-                    <span style="font-size:1.25rem;font-weight:700;color:${isTop ? COLORS.campSpendTop : COLORS.campSpendOther}">${spendFmt}đ</span>
+                    <span style="font-size:1.25rem;font-weight:700;color:${isTop ? COLORS.campSpendTop : COLORS.campSpendOther}">${spendFmt}</span>
                     <span style="display:block;font-size:1rem;color:${COLORS.campPctColor};font-weight:500;">${pct}%</span>
                 </div>
             </div>
@@ -627,7 +648,9 @@ async function loadDeviceChart() {
     const labels = Object.keys(deviceStats).sort((a, b) => deviceStats[b] - deviceStats[a]);
     const values = labels.map(l => deviceStats[l]);
 
-    const chartContainer = document.getElementById("device_chart").closest(".dom_inner");
+    const chartEl = document.getElementById("device_chart") || document.getElementById("device_chart_canvas");
+    if (!chartEl) return;
+    const chartContainer = chartEl.closest(".dom_inner");
     if (!chartContainer) return;
 
     chartContainer.innerHTML = `
@@ -665,7 +688,7 @@ async function loadDeviceChart() {
                 <i class="fa-solid ${icon}" style="color:${COLORS.devColors[i]};font-size:1.2rem;"></i>
                 <span>${label.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</span>
             </p>
-            <p style="font-weight:700;font-size:1.4rem;color:${COLORS.deviceValue};padding-left:2rem;">${parseInt(spend).toLocaleString('vi-VN')}₫</p>`;
+            <p style="font-weight:700;font-size:1.4rem;color:${COLORS.deviceValue};padding-left:2rem;">${formatMoney(spend)}</p>`;
         listContainer.appendChild(item);
     });
 

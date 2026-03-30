@@ -5,8 +5,11 @@ async function fetchJSON(url, options = {}, retries = 3) {
 
   // Return cached result if within TTL
   if (CACHE.has(key) && Date.now() - (CACHE_TTL.get(key) || 0) < CACHE_TTL_MS) {
+    console.log(`[Cache Hit] URI: ${url.substring(0, 100)}...`);
     return CACHE.get(key);
   }
+
+  console.log(`[API Request] URI: ${url.substring(0, 100)}... ${options.body ? 'with body' : ''}`);
 
   try {
     const res  = await fetch(url, options);

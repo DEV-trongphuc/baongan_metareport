@@ -39,8 +39,37 @@ window._afterTokenResolved = function () {
 };
 
 // ── Format helpers ───────────────────────────────────────────────
-const formatMoney  = (v) => v && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") + "đ" : "0đ";
-const formatNumber = (v) => v && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") : "0";
+const formatMoney = (v) => {
+  if (v == null || isNaN(v)) return window.ACCOUNT_CURRENCY === 'USD' ? "$0" : (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ");
+  const num = Number(v);
+  if (window.ACCOUNT_CURRENCY === 'USD') {
+    const hasDecimals = num % 1 !== 0;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: hasDecimals ? 2 : 0,
+      maximumFractionDigits: hasDecimals ? 2 : 0
+    }).format(num);
+  }
+  return formatMoney(num);
+};
+
+const formatNumber = (v) => {
+  if (v == null || isNaN(v)) return "0";
+  const num = Number(v);
+  if (window.ACCOUNT_CURRENCY === 'USD') {
+    const hasDecimals = num % 1 !== 0;
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: hasDecimals ? 2 : 0,
+      maximumFractionDigits: hasDecimals ? 2 : 0
+    }).format(num);
+  }
+  return Math.round(num).toLocaleString("vi-VN");
+};
+
+// Make them available globally explicitly (optional but safe)
+window.formatMoney = formatMoney;
+window.formatNumber = formatNumber;
 const calcCpm      = (spend, reach) => reach ? (spend / reach) * 1000 : 0;
 const calcFrequency = (impr, reach) => reach ? (impr / reach).toFixed(1) : "0.0";
 

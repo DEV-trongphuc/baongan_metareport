@@ -250,6 +250,10 @@ const COMPARE_GROUPS = [
     label: "VIDEO",
     ids: ["video_play", "video_view", "thruplay", "video_p25", "video_p50", "video_p75", "video_p95", "video_p100"],
   },
+  {
+    label: "CHUYỂN ĐỔI (OFFSITE)",
+    ids: ["offsite_purchase", "offsite_reg", "offsite_custom", "offsite_view"],
+  },
 ];
 
 function getItemLabel(item) {

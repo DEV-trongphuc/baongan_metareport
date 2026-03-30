@@ -575,7 +575,7 @@ function renderChartByDevice(dataByDevice) {
   validEntries.slice(0, 5).forEach((entry, i) => {
     const val = values[i];
     const displayVal = useSpend
-      ? parseInt(val).toLocaleString('vi-VN') + '₫'
+      ? formatMoney(val)
       : formatNumber(val) + ' results';
     const item = document.createElement('div');
     item.style.cssText = `
@@ -632,7 +632,7 @@ function renderChartByDevice(dataByDevice) {
             callbacks: {
               label: (c) => {
                 const pct = ((c.raw / total) * 100).toFixed(1);
-                const val = useSpend ? parseInt(c.raw).toLocaleString('vi-VN') + '₫' : formatNumber(c.raw);
+                const val = useSpend ? formatMoney(c.raw) : formatNumber(c.raw);
                 return `${c.label}: ${val} (${pct}%)`;
               }
             }
@@ -656,11 +656,7 @@ function renderChartByRegion(dataByRegion) {
   if (!ctx) return;
   const c2d = ctx.getContext("2d");
 
-  const prettyName = (key) =>
-    key
-      .replace(/province/gi, "")
-      .trim()
-      .replace(/^\w/, (c) => c.toUpperCase());
+  const prettyName = (key) => key.trim();
 
   // ✅ Helper mạnh hơn getResults() cho breakdown data (object format)
   // Meta API breakdown đôi khi trả về "messaging_conversation_started_7d"
@@ -709,10 +705,7 @@ function renderChartByRegion(dataByRegion) {
     result: getBreakdownResult(v),
   }));
 
-  const totalSpend = entries.reduce((acc, e) => acc + e.spend, 0);
-  const minSpend = totalSpend * 0.02;
-
-  const filtered = entries.filter((r) => r.spend >= minSpend);
+  const filtered = entries.filter((r) => r.spend > 0);
 
   if (window.chart_by_region_instance) {
     window.chart_by_region_instance.destroy();
@@ -725,17 +718,7 @@ function renderChartByRegion(dataByRegion) {
   filtered.sort((a, b) => b.spend - a.spend);
   const top5 = filtered.slice(0, 5);
 
-  // ✅ Helper rút gọn tên vùng
-  const shortenName = (name) => {
-    let s = name
-      .replace(/\b(tỉnh|thành phố|tp\.|tp|province|city|region|state|district|area|zone)\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/^\w/, (c) => c.toUpperCase());
-    return s.length > 12 ? s.slice(0, 11) + "…" : s;
-  };
-
-  const labels = top5.map((e) => shortenName(e.name));
+  const labels = top5.map((e) => e.name);
   const fullNamesDetail = top5.map((e) => e.name);
   const spentData = top5.map((e) => e.spend);
   const resultData = top5.map((e) => e.result);
@@ -1079,9 +1062,7 @@ function renderChartByPlatform(allData) {
           <img src="${getLogo(p.key, groupKey)}" alt="${p.key}" />
           <span>${formatName(p.key)}</span>
         </p>
-        <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${p.spend.toLocaleString(
-        "vi-VN"
-      )}đ</span></p>
+        <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${formatMoney(p.spend)}</span></p>
         <p><span class="total_result"><i class="fa-solid fa-bullseye"></i> ${p.result > 0 ? formatNumber(p.result) : "—"
         }</span></p>
         <p class="toplist_percent" style="color:${color};background:${bg}">

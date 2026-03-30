@@ -49,4 +49,10 @@ const METRIC_REGISTRY = {
   follow:             { id: "follow",             label: "Follows",          icon: "fa-solid fa-user-plus",              type: "action",  action_type: "page_like",                                    format: "number" },
   like:               { id: "like",               label: "Likes",            icon: "fa-solid fa-heart",                  type: "action",  action_type: "post_net_like",                                format: "number" },
   save:               { id: "save",               label: "Saves",            icon: "fa-solid fa-bookmark",               type: "action",  action_type: "onsite_conversion.post_save",                  format: "number" },
+  
+  // Offsite conversions
+  offsite_purchase:   { id: "offsite_purchase",   label: "Offsite Purchases",icon: "fa-solid fa-cart-arrow-down",        type: "action",  action_type: "offsite_conversion.fb_pixel_purchase",         format: "number" },
+  offsite_reg:        { id: "offsite_reg",        label: "Offsite Reg",      icon: "fa-solid fa-user-check",             type: "action",  action_type: "offsite_conversion.fb_pixel_complete_registration", format: "number" },
+  offsite_custom:     { id: "offsite_custom",     label: "Offsite Custom",   icon: "fa-solid fa-wand-magic-sparkles",    type: "action",  action_type: "offsite_conversion.fb_pixel_custom",           format: "number" },
+  offsite_view:       { id: "offsite_view",       label: "Offsite Views",    icon: "fa-solid fa-eye-low-vision",         type: "action",  action_type: "offsite_conversion.fb_pixel_view_content",     format: "number" },
 };

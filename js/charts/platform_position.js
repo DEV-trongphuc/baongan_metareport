@@ -49,9 +49,7 @@ function renderPlatformPosition(data) {
         <img src="${getLogo(publisher)}" alt="${publisher}" />
         <span>${formatNamePst(publisher, position)}</span>
       </p>
-      <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${spend.toLocaleString(
-      "vi-VN"
-    )}đ</span></p>
+      <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${formatMoney(spend)}</span></p>
       <p class="toplist_percent" style="color:rgb(226,151,0);background:rgba(255,169,0,0.05)">
         <!-- color: CHART_WARN | background: CHART_GOLD_BG -->
         ${percent.toFixed(1)}%
@@ -83,16 +81,20 @@ function renderPlatformSpendUI(summary) {
 
   const total = summary.facebook + summary.instagram + summary.other;
 
-  const ctx = document.getElementById("platform_chart");
-  if (!ctx) return;
-  const c2d = ctx.getContext("2d");
-
   if (window.platformChartInstance) {
     window.platformChartInstance.destroy();
     window.platformChartInstance = null; // Gán null
   }
 
-  if (total <= 0) return; // Nếu total = 0, chỉ destroy chart cũ và return
+  const domPercentWrap = document.querySelector(".dom_platform_percent");
+  if (total <= 0) {
+    if (domPercentWrap) domPercentWrap.innerHTML = "";
+    return;
+  }
+
+  const ctx = document.getElementById("platform_chart");
+  if (!ctx) return;
+  const c2d = ctx.getContext("2d");
 
   const values = [summary.facebook, summary.instagram, summary.other];
   const labels = ["Facebook", "Instagram", "Other"];

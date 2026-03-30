@@ -1,4 +1,4 @@
-﻿
+
 // ── 📊 Detailed Performance Report & Comparison ────────────────────
 
 let perfCalendarMonth = new Date().getMonth();
@@ -300,6 +300,10 @@ function renderPerformanceTable(manualCompareData = null) {
       photo_view: getAct(["photo_view"]),
       page_engagement: getAct(["page_engagement"]),
       post_engagement: getAct(["post_engagement"]),
+      offsite_purchase: getAct(["offsite_conversion.fb_pixel_purchase"]),
+      offsite_reg: getAct(["offsite_conversion.fb_pixel_complete_registration"]),
+      offsite_custom: getAct(["offsite_conversion.fb_pixel_custom"]),
+      offsite_view: getAct(["offsite_conversion.fb_pixel_view_content"]),
       engagement: getAct(["post_engagement", "page_engagement", "post_interaction"]),
       reaction: getAct(["post_reaction", "reaction", "like"]),
       comment: getAct(["comment", "post_comment"]),
@@ -358,6 +362,12 @@ function renderPerformanceTable(manualCompareData = null) {
     { id: "video_p75", label: "Video xem 75%", icon: "fa-solid fa-hourglass-end", val: cur.video_p75, old: prev.video_p75, type: "num" },
     { id: "video_p95", label: "Video xem 95%", icon: "fa-solid fa-hourglass", val: cur.video_p95, old: prev.video_p95, type: "num" },
     { id: "video_p100", label: "Video xem 100%", icon: "fa-solid fa-clock", val: cur.video_p100, old: prev.video_p100, type: "num" },
+
+    { section: "Chuyển Đổi (Offsite)" },
+    { id: "offsite_purchase", label: "Mua hàng (Offsite)", icon: "fa-solid fa-cart-arrow-down", val: cur.offsite_purchase, old: prev.offsite_purchase, type: "num" },
+    { id: "offsite_reg", label: "Đăng ký (Offsite)", icon: "fa-solid fa-user-check", val: cur.offsite_reg, old: prev.offsite_reg, type: "num" },
+    { id: "offsite_custom", label: "Tùy chỉnh (Offsite)", icon: "fa-solid fa-wand-magic-sparkles", val: cur.offsite_custom, old: prev.offsite_custom, type: "num" },
+    { id: "offsite_view", label: "Xem Nội Dung (Offsite)", icon: "fa-solid fa-eye-low-vision", val: cur.offsite_view, old: prev.offsite_view, type: "num" },
   ];
 
   // --- 🧠 SMART INSIGHTS LOGIC ---

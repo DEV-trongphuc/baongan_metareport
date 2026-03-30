@@ -4,7 +4,13 @@ async function loadCampaignList() {
       fetchCampaignInsights(),
       fetchAdsets(),
     ]);
-    if (!adsets || !adsets.length) throw new Error("No adsets found.");
+    if (!adsets || !adsets.length) {
+      window._ALL_CAMPAIGNS = [];
+      renderCampaignView([]);
+      renderGoalChart([]);
+      if (typeof loadExtraCharts === "function") loadExtraCharts();
+      return;
+    }
 
     const adsetIds = adsets.map((as) => as.adset_id).filter(Boolean);
     const ads = await fetchAdsAndInsights(adsetIds);

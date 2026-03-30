@@ -425,14 +425,14 @@ async function generateDeepReportDetailed({
       return window.formatMoney(n);
     try {
       return n === 0
-        ? "0đ"
+        ? (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ")
         : n.toLocaleString("vi-VN", {
           style: "currency",
           currency: "VND",
           maximumFractionDigits: 0,
         });
     } catch {
-      return `${Math.round(n)}đ`;
+      return `${formatMoney(n)}`;
     }
   };
 
@@ -985,7 +985,7 @@ async function runDeepReport() {
  */
 
 // Đảm bảo bạn đã có 2 hàm này ở đâu đó
-// const formatMoney = (v) => v != null && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") + "đ" : "0đ";
+// const formatMoney = (v) => v != null && !isNaN(v) ? formatMoney(v) : (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ");
 // const formatNumber = (v) => v != null && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") : "0";
 
 /**
@@ -1176,7 +1176,7 @@ function createBreakdownTable(dataArray, type) {
 
   // Dùng hàm formatMoney và formatNumber (đảm bảo chúng tồn tại)
   const formatMoneySafe = (n) =>
-    window.formatMoney ? window.formatMoney(n) : `${Math.round(n || 0)}đ`;
+    window.formatMoney ? window.formatMoney(n) : `${formatMoney(n || 0)}`;
   const formatNumberSafe = (n) =>
     window.formatNumber ? window.formatNumber(n) : Math.round(n || 0);
   const formatCPRSafe = (n, goal) =>

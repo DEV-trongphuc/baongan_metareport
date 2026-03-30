@@ -1301,8 +1301,11 @@ async function fetchJSON(url, options = {}) {
   const key = url + JSON.stringify(options);
   // Kiểm tra cache còn TTL không
   if (CACHE.has(key) && Date.now() - (CACHE_TTL.get(key) || 0) < CACHE_TTL_MS) {
+    console.log(`[Cache Hit] URI: ${url.substring(0, 100)}...`);
     return CACHE.get(key);
   }
+
+  console.log(`[API Request] URI: ${url.substring(0, 100)}... options object length: ${JSON.stringify(options).length}`);
 
   try {
     const res = await fetch(url, options);
@@ -2067,17 +2070,13 @@ function renderCampaignView(data) {
 
         if (dailyBudget > 0) {
           label = `<span class="status-label">Daily Budget</span>`;
-          value = `<span class="status-value">${dailyBudget.toLocaleString(
-            "vi-VN"
-          )}đ</span>`;
+          value = `<span class="status-value">${formatMoney(dailyBudget)}</span>`;
           timeText = endDate
             ? `<i class="fa-regular fa-clock" style="opacity: 0.5"></i> ${startDate} to ${endDate}`
             : `<i class="fa-regular fa-clock" style="opacity: 0.5"></i> START: ${startDate}`;
         } else if (lifetimeBudget > 0) {
           label = `<span class="status-label">Lifetime Budget</span>`;
-          value = `<span class="status-value">${lifetimeBudget.toLocaleString(
-            "vi-VN"
-          )}đ</span>`;
+          value = `<span class="status-value">${formatMoney(lifetimeBudget)}</span>`;
           timeText = `<i class="fa-regular fa-clock" style="opacity: 0.5"></i> ${startDate} to ${endDate}`;
         }
 
@@ -2569,6 +2568,8 @@ function initDashboard() {
 }
 
 async function loadDashboardData() {
+  console.log(`[Dashboard] loadDashboardData called for ACCOUNT_ID: ${typeof ACCOUNT_ID !== 'undefined' ? ACCOUNT_ID : 'undefined'}`);
+
   const domDate = document.querySelector(".dom_date");
   if (domDate) {
     const fmt = (d) => {
@@ -2586,14 +2587,17 @@ async function loadDashboardData() {
   resetYearDropdownToCurrentYear();
   resetFilterDropdownTo("spend");
 
+  console.log(`[Dashboard] Starting parallel Meta task requests...`);
+
   // 🚀 TỐI ƯU: Khởi chạy song song các phần của Meta (Charts + Monthly + List)
   const metaTasks = [
-    loadAllDashboardCharts(),
-    initializeYearData(),
-    loadCampaignList()
+    loadAllDashboardCharts().then(()=>console.log('[Dashboard] loadAllDashboardCharts completed.')),
+    initializeYearData().then(()=>console.log('[Dashboard] initializeYearData completed.')),
+    loadCampaignList().then(()=>console.log('[Dashboard] loadCampaignList completed.'))
   ];
 
   await Promise.all(metaTasks).finally(() => {
+    console.log(`[Dashboard] All Meta requests finished.`);
     if (loading) loading.classList.remove("active");
     // 🦴 Skeleton end
     toggleSkeletons(".dom_dashboard", false);
@@ -2780,7 +2784,7 @@ function renderCompareCampaigns() {
     const spend = fmt(c.spend);
     const reach = fmtShort(c.reach);
     const result = fmt(c.result);
-    const cpr = c.result > 0 ? fmt(c.spend / c.result) + "đ" : "N/A";
+    const cpr = c.result > 0 ? formatMoney(c.spend / c.result) : "N/A";
     const spendPct = Math.round((c.spend / maxSpend) * 100);
 
     // Top adset theo chi phí
@@ -2872,7 +2876,7 @@ async function runAiCompare() {
   if (wordBtn) wordBtn.style.display = "none";
 
   const fmt = n => Math.round(n || 0).toLocaleString("vi-VN");
-  const fmtMoney = n => fmt(n) + "đ";
+  const fmtMoney = n => formatMoney(n);
 
   const blocks = selected.map((c, idx) => {
     const adsetLines = (c.adsets || []).map(as =>
@@ -3734,7 +3738,7 @@ window._afterTokenResolved = function () {
   main();
 };
 const formatMoney = (v) =>
-  v && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") + "đ" : "0đ";
+  v && !isNaN(v) ? formatMoney(v) : (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ");
 const formatNumber = (v) =>
   v && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") : "0";
 const calcCpm = (spend, reach) => (reach ? (spend / reach) * 1000 : 0);
@@ -5519,7 +5523,7 @@ function updateSummaryUI(campaigns) {
 
   document.querySelector(
     "#spent span"
-  ).textContent = `${totalSpend.toLocaleString("vi-VN")}đ`;
+  ).textContent = `${formatMoney(totalSpend)}`;
   document.querySelector(
     "#reach span"
   ).textContent = `${totalReach.toLocaleString("vi-VN")}`;
@@ -7077,7 +7081,7 @@ function renderChartByDevice(dataByDevice) {
   validEntries.slice(0, 5).forEach((entry, i) => {
     const val = values[i];
     const displayVal = useSpend
-      ? parseInt(val).toLocaleString('vi-VN') + '₫'
+      ? formatMoney(val)
       : formatNumber(val) + ' results';
 
     const item = document.createElement('div');
@@ -7122,7 +7126,7 @@ function renderChartByDevice(dataByDevice) {
             label: (c) => {
               const pct = ((c.raw / total) * 100).toFixed(1);
               const val = useSpend
-                ? parseInt(c.raw).toLocaleString('vi-VN') + '₫'
+                ? formatMoney(c.raw)
                 : formatNumber(c.raw);
               return `${c.label}: ${val} (${pct}%)`;
             }
@@ -7577,9 +7581,7 @@ function renderChartByPlatform(allData) {
           <img src="${getLogo(p.key, groupKey)}" alt="${p.key}" />
           <span>${formatName(p.key)}</span>
         </p>
-        <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${p.spend.toLocaleString(
-        "vi-VN"
-      )}đ</span></p>
+        <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${formatMoney(p.spend)}</span></p>
         <p><span class="total_result"><i class="fa-solid fa-bullseye"></i> ${p.result > 0 ? formatNumber(p.result) : "—"
         }</span></p>
         <p class="toplist_percent" style="color:${color};background:${bg}">
@@ -8360,6 +8362,7 @@ async function fetchDashboardInsightsBatch(campaignIds = []) {
     batch: batchRequests,
     include_headers: false,
   };
+
   const headers = { "Content-Type": "application/json" };
 
   try {
@@ -8557,9 +8560,7 @@ function renderPlatformPosition(data) {
         <img src="${getLogo(publisher)}" alt="${publisher}" />
         <span>${formatNamePst(publisher, position)}</span>
       </p>
-      <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${spend.toLocaleString(
-      "vi-VN"
-    )}đ</span></p>
+      <p><span class="total_spent"><i class="fa-solid fa-money-bill"></i> ${formatMoney(spend)}</span></p>
       <p class="toplist_percent" style="color:rgb(226, 151, 0);background:rgba(254,169,0,0.05)">
         ${percent.toFixed(1)}%
       </p>
@@ -8590,16 +8591,21 @@ function renderPlatformSpendUI(summary) {
 
   const total = summary.facebook + summary.instagram + summary.other;
 
+  if (window.platformChartInstance) {
+    window.platformChartInstance.destroy();
+    window.platformChartInstance = null;
+  }
+
+  const domPercentWrap = document.querySelector(".dom_platform_percent");
+  
+  if (total <= 0) {
+    if (domPercentWrap) domPercentWrap.innerHTML = "";
+    return;
+  }
+
   const ctx = document.getElementById("platform_chart");
   if (!ctx) return;
   const c2d = ctx.getContext("2d");
-
-  if (window.platformChartInstance) {
-    window.platformChartInstance.destroy();
-    window.platformChartInstance = null; // Gán null
-  }
-
-  if (total <= 0) return; // Nếu total = 0, chỉ destroy chart cũ và return
 
   const values = [summary.facebook, summary.instagram, summary.other];
   const labels = ["Facebook", "Instagram", "Other"];
@@ -8939,7 +8945,104 @@ window.selectCalendarDay = (dateStr) => {
   renderCalendar();
 };
 
+function renderRegionChart(data = []) {
+  // Cache data for toggle re-render
+  window._lastRegionData = data;
+
+  if (!Array.isArray(data) || !data.length) return;
+
+  const ctx = document.getElementById("region_chart");
+  if (!ctx) return;
+
+  if (window.chart_region_total instanceof Chart) {
+    try { window.chart_region_total.destroy(); } catch (err) {}
+  }
+  window.chart_region_total = null;
+
+  const regionSpend = {};
+  data.forEach((d) => {
+    const region = (d.region || "").trim();
+    if (!region || region.toUpperCase() === "UNKNOWN") return;
+    const spend = parseFloat(d.spend || 0);
+    if (spend <= 0) return;
+    regionSpend[region] = (regionSpend[region] || 0) + spend;
+  });
+
+  const totalSpend = Object.values(regionSpend).reduce((a, b) => a + b, 0);
+  if (totalSpend === 0) return;
+
+  const allEntries = Object.entries(regionSpend).filter(([_, v]) => v > 0);
+  allEntries.sort((a, b) => b[1] - a[1]);
+  const filtered = allEntries.slice(0, 5);
+  if (!filtered.length) return;
+
+  const labels = filtered.map(([r]) => r);
+  const values = filtered.map(([_, v]) => Math.round(v));
+  const maxRegion = filtered[0][0];
+
+  const c2d = ctx.getContext("2d");
+  const gradientGold = c2d.createLinearGradient(0, 0, 0, 300);
+  gradientGold.addColorStop(0, "rgba(255,169,0,1)");
+  gradientGold.addColorStop(1, "rgba(255,169,0,0.4)");
+  const gradientGray = c2d.createLinearGradient(0, 0, 0, 300);
+  gradientGray.addColorStop(0, "rgba(210,210,210,0.9)");
+  gradientGray.addColorStop(1, "rgba(160,160,160,0.4)");
+
+  const bgColors = filtered.map(([r]) => r === maxRegion ? gradientGold : gradientGray);
+  const isFew = labels.length < 3;
+
+  window.chart_region_total = new Chart(c2d, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Spend",
+        data: values,
+        backgroundColor: bgColors,
+        borderRadius: 8,
+        borderWidth: 0,
+        ...(isFew && { barPercentage: 0.35, categoryPercentage: 0.65 }),
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 10, right: 10 } },
+      animation: { duration: 600, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (ctx) => ctx[0].label,
+            label: (ctx) => `Spend: ${formatMoneyShort(ctx.raw)}`,
+          },
+        },
+        datalabels: {
+          anchor: "end", align: "end", offset: 2,
+          font: { size: 11, weight: "600" },
+          color: "#555",
+          formatter: (v) => (v > 0 ? formatMoneyShort(v) : ""),
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(0,0,0,0.03)", drawBorder: true, borderColor: "rgba(0,0,0,0.05)" },
+          ticks: { color: "#666", font: { weight: "600", size: 9 }, maxRotation: 30, minRotation: 0, autoSkip: false },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: "rgba(0,0,0,0.03)", drawBorder: true, borderColor: "rgba(0,0,0,0.05)" },
+          ticks: { display: false },
+          suggestedMax: Math.max(...values) * 1.2,
+        },
+      },
+    },
+    plugins: [ChartDataLabels],
+  });
+}
+
 // =================== PRESET RANGE ===================
+
 function getDateRange(type) {
   const today = new Date();
   const start = new Date(today);
@@ -9024,6 +9127,12 @@ function reloadDashboard() {
 // =================== MAIN INIT ===================
 
 function renderAgeGenderChart(rawData = []) {
+  // ❌ Clear chart cũ trước khi return nếu mảng rỗng
+  if (window.chart_age_gender_total?.destroy) {
+    window.chart_age_gender_total.destroy();
+    window.chart_age_gender_total = null;
+  }
+
   if (!Array.isArray(rawData) || !rawData.length) return;
 
   // 🚫 Bỏ gender unknown
@@ -9034,12 +9143,6 @@ function renderAgeGenderChart(rawData = []) {
   const ctx = document.getElementById("age_gender_total");
   if (!ctx) return;
   const c2d = ctx.getContext("2d");
-
-  // ❌ Clear chart cũ
-  if (window.chart_age_gender_total?.destroy) {
-    window.chart_age_gender_total.destroy();
-    window.chart_age_gender_total = null;
-  }
 
   if (!data.length) return; // Nếu không có data (sau khi filter) thì return
 
@@ -9532,7 +9635,7 @@ if (statusFilterBox) {
       selectedText.innerHTML = label;
 
       if (view === "reset_status") {
-        selectedText.textContent = "Sắp kết thúc";
+        selectedText.textContent = "Ending Soon";
         renderCampaignView(window._ALL_CAMPAIGNS);
       } else {
         const now = new Date();
@@ -9546,12 +9649,12 @@ if (statusFilterBox) {
 
           if (!endTimes.length) return false;
 
-          // Đối với "Đã kết thúc", check xem có cái nào đã qua ngày hiện tại chưa
+          // Đối với "Ended", check xem có cái nào đã qua ngày hiện tại chưa
           if (view === "ended_ads") {
             return endTimes.some(d => d < now);
           }
 
-          // Đối với "Sắp kết thúc x ngày"
+          // Đối với "Ending Soon x ngày"
           const days = view === "ending_1d" ? 1 : 3;
           return endTimes.some(d => {
             const diff = d - now;
@@ -9723,6 +9826,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update global variable and close dropdown
       ACCOUNT_ID = accId;
+
+      // --- Reset ALL caches so new account gets fresh data ---
+      if (typeof CACHE !== "undefined") CACHE.clear();
+      window._DASHBOARD_BATCH_RESULTS = null;
+      window._extraChartsKey          = null;  // extra_details.js guard
+      window._lastRegionData          = null;
+      window._ALL_CAMPAIGNS           = [];
+      window.processedByRegion        = null;
+
+      // Destroy stale charts so they re-render fresh
+      ['chart_region_total','chart_age_gender_total','platformChartInstance',
+       'extra_goal_chart_instance','device_chart_instance'].forEach(k => {
+        if (window[k] instanceof Chart) {
+          try { window[k].destroy(); } catch(e) {}
+          window[k] = null;
+        }
+      });
+
+      // Update currency badge from the li dataset
+      const currencyEl = option.querySelector("span:last-child");
+      if (currencyEl) {
+        const match = currencyEl.textContent.match(/Tiền tệ:\s*(\w+)/);
+        if (match) window.ACCOUNT_CURRENCY = match[1];
+      }
+
       parent.classList.remove("active");
 
       // Load dashboard data after account change
@@ -9854,12 +9982,8 @@ async function fetchAdAccountInfo() {
     }
 
     // Cập nhật thông tin vào DOM
-    document.getElementById("detail_balance").innerHTML = `${(
-      balance * 1
-    ).toLocaleString("vi-VN")}đ`;
-    document.getElementById("detail_vat").innerHTML = `${(
-      vat * 1
-    ).toLocaleString("vi-VN")}đ`;
+    document.getElementById("detail_balance").innerHTML = formatMoney(balance * 1);
+    document.getElementById("detail_vat").innerHTML = formatMoney(vat * 1);
     document.getElementById("detail_method").innerHTML = paymentMethodDisplay;
 
     // Cập nhật Business Info
@@ -10670,14 +10794,14 @@ async function generateDeepReportDetailed({
       return window.formatMoney(n);
     try {
       return n === 0
-        ? "0đ"
+        ? (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ")
         : n.toLocaleString("vi-VN", {
           style: "currency",
           currency: "VND",
           maximumFractionDigits: 0,
         });
     } catch {
-      return `${Math.round(n)}đ`;
+      return `${formatMoney(n)}`;
     }
   };
 
@@ -11237,7 +11361,7 @@ async function runDeepReport() {
  */
 
 // Đảm bảo bạn đã có 2 hàm này ở đâu đó
-// const formatMoney = (v) => v != null && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") + "đ" : "0đ";
+// const formatMoney = (v) => v != null && !isNaN(v) ? formatMoney(v) : (window.ACCOUNT_CURRENCY === "USD" ? "$0" : "0đ");
 // const formatNumber = (v) => v != null && !isNaN(v) ? Math.round(v).toLocaleString("vi-VN") : "0";
 
 /**
@@ -11429,7 +11553,7 @@ function createBreakdownTable(dataArray, type) {
 
   // Dùng hàm formatMoney và formatNumber (đảm bảo chúng tồn tại)
   const formatMoneySafe = (n) =>
-    window.formatMoney ? window.formatMoney(n) : `${Math.round(n || 0)}đ`;
+    window.formatMoney ? window.formatMoney(n) : `${formatMoney(n || 0)}`;
   const formatNumberSafe = (n) =>
     window.formatNumber ? window.formatNumber(n) : Math.round(n || 0);
   const formatCPRSafe = (n, goal) =>

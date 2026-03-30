@@ -18,9 +18,6 @@ function toggleAgeOnlyView() {
 
 function renderAgeGenderChart(rawData = []) {
   _ageGenderRawData = rawData;   // cache để toggle dùng lại
-  if (!Array.isArray(rawData) || !rawData.length) return;
-
-  const data = rawData.filter((d) => d.gender && d.gender.toLowerCase() !== "unknown");
 
   const ctx = document.getElementById("age_gender_total");
   if (!ctx) return;
@@ -30,6 +27,10 @@ function renderAgeGenderChart(rawData = []) {
     window.chart_age_gender_total.destroy();
     window.chart_age_gender_total = null;
   }
+
+  if (!Array.isArray(rawData) || !rawData.length) return;
+
+  const data = rawData.filter((d) => d.gender && d.gender.toLowerCase() !== "unknown");
   if (!data.length) return;
 
   const ages = [...new Set(data.map((d) => d.age))].sort((a, b) => parseInt(a) - parseInt(b));

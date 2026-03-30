@@ -87,7 +87,7 @@ function updateSummaryUI(campaigns) {
 
   document.querySelector(
     "#spent span"
-  ).textContent = `${totalSpend.toLocaleString("vi-VN")}đ`;
+  ).textContent = `${formatMoney(totalSpend)}`;
   document.querySelector(
     "#reach span"
   ).textContent = `${totalReach.toLocaleString("vi-VN")}`;
